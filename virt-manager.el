@@ -38,6 +38,14 @@
 
 (defvar vm-buffer-name "*virtual machines*")
 
+(defvar vm-default-connection
+  (let ((default-connection "qemu:///system")
+	(connection (getenv "VIRSH_DEFAULT_CONNECT_URI")))
+    (if (or (null connection)
+	    (string= connection ""))
+	default-connection
+      connection)))
+
 ;; buffer content
 
 (defun vm-get-virtual-machines ()
@@ -46,7 +54,7 @@
      (split-string line "  +" t))
    (split-string
     (with-temp-buffer
-      (call-process "virsh" nil t nil "list" "--all")
+      (call-process "virsh" nil t nil "-c" vm-default-connection "list" "--all") ;; TODO handle errors
       (goto-char (point-min))
       (kill-whole-line 2) ;; TODO messes up the kill ring
       (buffer-string))
@@ -131,7 +139,7 @@
 
 (defun vm-change-current-machine-state (state)
   (let ((machine (cadr (vm-get-current-machine))))
-    (call-process "virsh" nil nil nil state machine) ;; TODO handle errors
+    (call-process "virsh" nil nil nil "-c" vm-default-connection state machine) ;; TODO handle errors
     (message (format "State of %s changing to '%s'. Refresh the buffer." machine state))
     (vm-refresh)))
 
