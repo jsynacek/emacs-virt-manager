@@ -188,12 +188,4 @@
   ;(setq buffer-read-only t)
   (buffer-disable-undo))
 
-
-
-
-
-
-
-
-
-
+(provide 'virt-manager)
