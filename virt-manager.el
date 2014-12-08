@@ -54,7 +54,7 @@
      (split-string line "  +" t))
    (split-string
     (with-temp-buffer
-      (call-process "virsh" nil t nil "-c" vm-default-connection "list" "--all") ;; TODO handle errors
+      (vm-virsh t "list" "--all")
       (goto-char (point-min))
       (kill-whole-line 2) ;; TODO messes up the kill ring
       (buffer-string))
@@ -135,11 +135,29 @@
 	    (vm-header-line-p))
     (vm-first-line)))
 
+;; virsh util
+
+(defun join-string (&rest args)
+  (mapconcat #'identity
+	     args
+	     " "))
+
+(defmacro with-current-machine (&rest body)
+  `(let ((machine (cadr (vm-get-current-machine))))
+     ,@body))
+
+(defmacro vm-virsh (destination &rest args)
+  `(let ((ret
+	  (call-process "virsh"  nil ,destination nil "-c" vm-default-connection ,@args)))
+     (when (> ret 0)
+       (error "Executing '%s' failed" (join-string ,@args)))
+     ret))
+
 ;; machine state altering
 
 (defun vm-change-current-machine-state (state)
-  (let ((machine (cadr (vm-get-current-machine))))
-    (call-process "virsh" nil nil nil "-c" vm-default-connection state machine) ;; TODO handle errors
+  (with-current-machine
+    (vm-virsh nil state machine)
     (message (format "State of %s changing to '%s'. Refresh the buffer." machine state))
     (vm-refresh)))
 
