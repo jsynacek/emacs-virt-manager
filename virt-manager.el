@@ -31,7 +31,6 @@
 
 ;; - variable to control confirmation of reboots, shutdowns, ...
 ;; - make parsing immune to extra spaces in machine names
-;; - define own faces
 ;; - document code...
 ;; - implement ability to view available snapshots (bind to <tab> ?)
 ;; - display amount of snapshots
@@ -50,6 +49,45 @@
 	default-connection
       connection)))
 
+;; faces
+(make-face 'vm-header-face)
+(set-face-attribute 'vm-header-face nil
+		    :inherit 'default
+		    :weight 'bold)
+
+(make-face 'vm-machine-face)
+(set-face-attribute 'vm-machine-face nil
+		    :inherit 'default
+		    :foreground "#268bd2" ; solarized blue
+		    :weight 'bold)
+
+(make-face 'vm-machine-state-running-face)
+(set-face-attribute 'vm-machine-state-running-face nil
+		    :inherit 'default
+		    :foreground "#859900" ; solarized green
+		    :weight 'bold)
+
+(make-face 'vm-machine-state-paused-face)
+(set-face-attribute 'vm-machine-state-paused-face nil
+		    :inherit 'default
+		    :foreground "#b58900" ; solarized yellow
+		    :weight 'bold)
+
+(make-face 'vm-machine-state-shut-off-face)
+(set-face-attribute 'vm-machine-state-shut-off-face nil
+		    :inherit 'default
+		    :foreground "#586e75") ; solarized base01
+
+(defun vm-state-to-face (state)
+  (cond
+   ((string= "running" state)
+    'vm-machine-state-running-face)
+   ((string= "paused" state)
+    'vm-machine-state-paused-face)
+   ((string= "shut off" state)
+    'vm-machine-state-shut-off-face)
+   (t 'italic)))
+
 ;; buffer content
 
 (defun vm-get-virtual-machines ()
@@ -66,30 +104,32 @@
 
 (defun vm-insert-header ()
   (insert (propertize (format "%3s %-30s %-10s" ;; TODO make customizable
-			      "Id" "Machine" "State") ; TODO bold
-		      'font-lock-face 'font-lock-builtin-face)
+			      "Id" "Machine" "State")
+		      'font-lock-face 'vm-header-face)
 	  "\n"
 	  (propertize (make-string 43 ?-)
-		      'font-lock-face 'font-lock-comment-face)
+		      'font-lock-face 'vm-header-face)
 	  "\n"))
 
 (defun vm-insert-line (line-list)
   ""
   (let ((id (car line-list))
-	(machine (cadr line-list)))
+	(machine (cadr line-list))
+	(state (mapconcat  ; TODO use join-string
+		#'identity
+		(nthcdr 2 line-list)
+		" ")))
     (insert
      ; id
      (format "%3s" id)
      " "
      ; machine
      (propertize (format "%-30s" machine)
-		 'font-lock-face 'font-lock-variable-name-face)
+		 'font-lock-face 'vm-machine-face)
      " "
      ; state
-     (format "%-10s" (mapconcat  ; TODO use join-string
-		      #'identity
-		      (nthcdr 2 line-list)
-		      " ")) 	; TODO running = green, paused = orange, shut off = red
+     (propertize (format "%-10s" state)
+		 'font-lock-face (vm-state-to-face state))
      " ")))
 
 (defun vm-insert-content ()
