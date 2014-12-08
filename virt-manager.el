@@ -33,6 +33,10 @@
 ;; - make parsing immune to extra spaces in machine names
 ;; - colors!
 ;; - document code...
+;; - implement ability to view available snapshots (bind to <tab> ?)
+;; - display amount of snapshots
+;; - make vm-snapshot-delete-current-machine take a prefix arg and if it's there,
+;;   delete current snapshot
 
 ;;; Code:
 
@@ -185,7 +189,34 @@
   (interactive)
   (vm-change-current-machine-state "resume"))
 
+(defun vm-snapshot-current-machine (name)
+  (interactive "sSnapshot name: ")
+  (with-current-machine
+    (if (not (string= name ""))
+	(progn
+	  (vm-virsh nil "snapshot-create-as" machine name)
+	  (message "Snapshot '%s' of %s created" name machine))
+      (error "No snapshot name given, aborting"))))
+
+(defun vm-snapshot-delete-current-machine (&optional current)
+  (interactive "P")
+  (with-current-machine
+   (let ((snapshots
+	   (split-string
+	    (with-temp-buffer
+	      (vm-virsh t "snapshot-list" machine "--name")
+	      (buffer-string))
+	    "[\n]+"
+	    t)))
+     (if snapshots
+	 (let ((snapshot
+		(ido-completing-read "Snapshot: " snapshots)))
+	   (vm-virsh nil "snapshot-delete" machine snapshot)
+	   (message "Snapshot '%s' of %s deleted" snapshot machine))
+       (message "No snapshots available")))))
+
 ;; main
+
 (defun virt-manager ()
   (interactive)
   (let ((buf (get-buffer-create vm-buffer-name)))
@@ -206,6 +237,8 @@
     (define-key map (kbd "d") 'vm-destroy-current-machine)
     (define-key map (kbd "h") 'vm-suspend-current-machine)
     (define-key map (kbd "u") 'vm-resume-current-machine)
+    (define-key map (kbd "t") 'vm-snapshot-current-machine)
+    (define-key map (kbd "T") 'vm-snapshot-delete-current-machine)
     (define-key map (kbd "g") 'vm-refresh)
     map))
 
