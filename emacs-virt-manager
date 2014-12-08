@@ -1,0 +1,3 @@
+#!/bin/sh
+
+emacs -Q -l virt-manager.el -f "virt-manager"
