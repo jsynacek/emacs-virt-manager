@@ -36,6 +36,7 @@
 ;; - display amount of snapshots
 ;; - make vm-snapshot-delete-current-machine take a prefix arg and if it's there,
 ;;   delete current snapshot
+;; - implement virsh edit (use emacsclient as editor?)
 
 ;;; Code:
 
@@ -115,7 +116,7 @@
   ""
   (let ((id (car line-list))
 	(machine (cadr line-list))
-	(state (mapconcat  ; TODO use join-string
+	(state (mapconcat
 		#'identity
 		(nthcdr 2 line-list)
 		" ")))
