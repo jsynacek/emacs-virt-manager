@@ -31,7 +31,7 @@
 
 ;; - variable to control confirmation of reboots, shutdowns, ...
 ;; - make parsing immune to extra spaces in machine names
-;; - colors!
+;; - define own faces
 ;; - document code...
 ;; - implement ability to view available snapshots (bind to <tab> ?)
 ;; - display amount of snapshots
@@ -65,21 +65,32 @@
     "[\n]" t)))
 
 (defun vm-insert-header ()
-  (insert (format "%3s %-30s %-10s" ;; TODO make customizable
-		  "Id" "Machine" "Status")
+  (insert (propertize (format "%3s %-30s %-10s" ;; TODO make customizable
+			      "Id" "Machine" "State") ; TODO bold
+		      'font-lock-face 'font-lock-builtin-face)
 	  "\n"
-	  (make-string 43 ?-)
+	  (propertize (make-string 43 ?-)
+		      'font-lock-face 'font-lock-comment-face)
 	  "\n"))
 
 (defun vm-insert-line (line-list)
   ""
   (let ((id (car line-list))
 	(machine (cadr line-list)))
-    (insert (format "%3s %-30s %-10s" ;; TODO make customizable
-		    id machine (mapconcat
-				#'identity
-				(nthcdr 2 line-list)
-				" ")))))
+    (insert
+     ; id
+     (format "%3s" id)
+     " "
+     ; machine
+     (propertize (format "%-30s" machine)
+		 'font-lock-face 'font-lock-variable-name-face)
+     " "
+     ; state
+     (format "%-10s" (mapconcat  ; TODO use join-string
+		      #'identity
+		      (nthcdr 2 line-list)
+		      " ")) 	; TODO running = green, paused = orange, shut off = red
+     " ")))
 
 (defun vm-insert-content ()
   (vm-insert-header)
