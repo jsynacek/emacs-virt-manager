@@ -50,6 +50,8 @@
 	default-connection
       connection)))
 
+(defvar vm-enable-hl-line-mode t)
+
 ;; faces
 (make-face 'vm-header-face)
 (set-face-attribute 'vm-header-face nil
@@ -297,6 +299,7 @@
 (define-derived-mode virt-manager-mode special-mode "Virtual Manager"
   "TODO Doc"
   ;(setq buffer-read-only t)
-  (buffer-disable-undo))
+  (buffer-disable-undo)
+  (hl-line-mode vm-enable-hl-line-mode))
 
 (provide 'virt-manager)
