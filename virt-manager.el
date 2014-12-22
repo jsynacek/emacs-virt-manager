@@ -30,7 +30,6 @@
 ;;; TODO:
 
 ;; - variable to control confirmation of reboots, shutdowns, ...
-;; - make parsing immune to extra spaces in machine names
 ;; - document code...
 ;; - implement ability to view available snapshots (bind to <tab> ?)
 ;; - display amount of snapshots
