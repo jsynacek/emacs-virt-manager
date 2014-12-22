@@ -155,7 +155,7 @@ If set to an integer value, it specifies the width. Minimum is 30.")
 		 'font-lock-face 'vm-machine-face)
      " "
      ; state
-     (propertize (format (caddr parts) state)
+     (propertize (format (car (cddr parts)) state)
 		 'font-lock-face (vm-state-to-face state)))))
 
 (defun vm-insert-content ()
