@@ -41,6 +41,8 @@
 
 (defvar vm-buffer-name "*virtual machines*")
 
+(defvar vm-info-buffer-name "*vm info*")
+
 (defvar vm-default-connection
   (let ((default-connection "qemu:///system")
 	(connection (getenv "VIRSH_DEFAULT_CONNECT_URI")))
@@ -85,6 +87,12 @@ If set to an integer value, it specifies the width. Minimum is 30.")
 (set-face-attribute 'vm-machine-state-shut-off-face nil
 		    :inherit 'default
 		    :foreground "#586e75") ; solarized base01
+
+(make-face 'vm-info-header-face)
+(set-face-attribute 'vm-info-header-face nil
+		    :inherit 'default
+		    :foreground "#cb4b16" ; solarized orange
+		    :weight 'bold)
 
 (defun vm-state-to-face (state)
   (cond
@@ -207,14 +215,16 @@ If set to an integer value, it specifies the width. Minimum is 30.")
   (when (vm-divider-line-p)
     (forward-line))
   (when (looking-at "[\n]*$")
-    (forward-line -1)))
+    (forward-line -1))
+  (vm-update-info))
 
 (defun vm-previous-line ()
   (interactive)
   (forward-line -1)
   (when (or (vm-divider-line-p)
 	    (vm-header-line-p))
-    (vm-first-line)))
+    (vm-first-line))
+  (vm-update-info))
 
 ;; virsh util
 
@@ -292,6 +302,33 @@ If set to an integer value, it specifies the width. Minimum is 30.")
 	   (message "Snapshot '%s' of %s deleted" snapshot machine))
        (message "No snapshots available")))))
 
+(defun vm-insert-info (machine)
+  (insert (propertize "General information:\n"
+		      'font-lock-face 'vm-info-header-face))
+  (vm-virsh t "dominfo" machine)
+  (insert (propertize "Snapshots:\n"
+		      'font-lock-face 'vm-info-header-face))
+  (vm-virsh t "snapshot-list" machine))
+
+(defun vm-update-info ()
+  (when (get-buffer-window vm-info-buffer-name)
+    (with-current-machine
+     (with-current-buffer (get-buffer-create vm-info-buffer-name)
+       (delete-region (point-min) (point-max))
+       (vm-insert-info machine)
+       (font-lock-mode t)))))
+
+(defun vm-toggle-info-current-machine ()
+  (interactive)
+  (let ((window (get-buffer-window vm-info-buffer-name))
+	(buf (get-buffer-create vm-info-buffer-name)))
+    (if window
+	(progn
+	  (bury-buffer buf)
+	  (delete-window window))
+      (set-window-buffer (split-window) buf)
+      (vm-update-info))))
+
 ;; main
 
 (defun virt-manager ()
@@ -317,6 +354,7 @@ If set to an integer value, it specifies the width. Minimum is 30.")
     (define-key map (kbd "t") 'vm-snapshot-current-machine)
     (define-key map (kbd "T") 'vm-snapshot-delete-current-machine)
     (define-key map (kbd "g") 'vm-refresh)
+    (define-key map (kbd "<tab>") 'vm-toggle-info-current-machine)
     map))
 
 (define-derived-mode virt-manager-mode special-mode "Virtual Manager"
