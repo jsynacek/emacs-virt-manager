@@ -51,6 +51,12 @@
 
 (defvar vm-enable-hl-line-mode t)
 
+(defvar vm-table-width nil
+  "Width of the table that displays virtual machines.
+
+If NIL, the width of the current window is used. This is the default.
+If set to an integer value, it specifies the width. Minimum is 30.")
+
 ;; faces
 (make-face 'vm-header-face)
 (set-face-attribute 'vm-header-face nil
@@ -104,35 +110,53 @@
       (buffer-string))
     "[\n]" t)))
 
+(defun vm-real-width ()
+  (let ((max-width (- (window-width) 2))
+	(min-width 30))
+    (if vm-table-width
+	(min max-width
+	     (max vm-table-width
+		  min-width))
+      max-width)))
+
+(defun vm-format-string ()
+  (let* ((width (vm-real-width))
+	 (id-width 5)
+	 (state-width 10)
+	 (name-width (- width id-width state-width)))
+    (format "%%%ds %%-%ds %%-%ds"
+	    id-width name-width state-width)))
+
 (defun vm-insert-header ()
-  (insert (propertize (format "%3s %-30s %-10s" ;; TODO make customizable
+  (insert (propertize (format (vm-format-string)
 			      "Id" "Machine" "State")
 		      'font-lock-face 'vm-header-face)
 	  "\n"
-	  (propertize (make-string 43 ?-)
+	  (propertize (make-string (vm-real-width) ?-)
 		      'font-lock-face 'vm-header-face)
 	  "\n"))
 
 (defun vm-insert-line (line-list)
   ""
-  (let ((id (car line-list))
-	(machine (cadr line-list))
-	(state (mapconcat
-		#'identity
-		(nthcdr 2 line-list)
-		" ")))
+  (let* ((id (car line-list))
+	 (machine (cadr line-list))
+	 (state (mapconcat
+		 #'identity
+		 (nthcdr 2 line-list)
+		 " "))
+	 (format-str (vm-format-string))
+	 (parts (split-string format-str)))
     (insert
      ; id
-     (format "%3s" id)
+     (format (car parts) id)
      " "
      ; machine
-     (propertize (format "%-30s" machine)
+     (propertize (format (cadr parts) machine)
 		 'font-lock-face 'vm-machine-face)
      " "
      ; state
-     (propertize (format "%-10s" state)
-		 'font-lock-face (vm-state-to-face state))
-     " ")))
+     (propertize (format (caddr parts) state)
+		 'font-lock-face (vm-state-to-face state)))))
 
 (defun vm-insert-content ()
   (vm-insert-header)
